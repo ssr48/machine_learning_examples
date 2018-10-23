@@ -1,5 +1,10 @@
 # https://deeplearningcourses.com/c/unsupervised-deep-learning-in-python
 # https://www.udemy.com/unsupervised-deep-learning-in-python
+from __future__ import print_function, division
+from builtins import range
+# Note: you may need to update your version of future
+# sudo pip install -U future
+
 import numpy as np
 import pandas as pd
 
@@ -18,7 +23,7 @@ def getKaggleMNIST():
     # column 0 is labels
     # column 1-785 is data, with values 0 .. 255
     # total size of CSV: (42000, 1, 28, 28)
-    train = pd.read_csv('../large_files/train.csv').as_matrix().astype(np.float32)
+    train = pd.read_csv('../large_files/train.csv').values.astype(np.float32)
     train = shuffle(train)
 
     Xtrain = train[:-1000,1:] / 255
@@ -30,4 +35,5 @@ def getKaggleMNIST():
 
 
 def init_weights(shape):
-    return np.random.randn(*shape) / np.sqrt(sum(shape))
+    w = np.random.randn(*shape) / np.sqrt(sum(shape))
+    return w.astype(np.float32)

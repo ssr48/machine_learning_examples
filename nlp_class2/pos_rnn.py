@@ -1,6 +1,12 @@
 # Course URL:
 # https://deeplearningcourses.com/c/natural-language-processing-with-deep-learning-in-python
 # https://udemy.com/natural-language-processing-with-deep-learning-in-python
+from __future__ import print_function, division
+from builtins import range
+# Note: you may need to update your version of future
+# sudo pip install -U future
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 import theano
@@ -17,10 +23,11 @@ from sklearn.metrics import f1_score
 
 
 class RNN:
-    def __init__(self, D, hidden_layer_sizes, V):
+    def __init__(self, D, hidden_layer_sizes, V, K):
         self.hidden_layer_sizes = hidden_layer_sizes
         self.D = D
         self.V = V
+        self.K = K
 
     def fit(self, X, Y, learning_rate=1e-4, mu=0.99, epochs=30, show_fig=True, activation=T.nnet.relu, RecurrentUnit=GRU, normalize=False):
         D = self.D
@@ -35,8 +42,8 @@ class RNN:
             self.hidden_layers.append(ru)
             Mi = Mo
 
-        Wo = init_weight(Mi, V)
-        bo = np.zeros(V)
+        Wo = init_weight(Mi, self.K)
+        bo = np.zeros(self.K)
 
         self.We = theano.shared(We)
         self.Wo = theano.shared(Wo)
@@ -52,6 +59,13 @@ class RNN:
         for ru in self.hidden_layers:
             Z = ru.output(Z)
         py_x = T.nnet.softmax(Z.dot(self.Wo) + self.bo)
+
+        testf = theano.function(
+            inputs=[thX],
+            outputs=py_x,
+        )
+        testout = testf(X[0])
+        print("py_x.shape:", testout.shape)
 
         prediction = T.argmax(py_x, axis=1)
         
@@ -89,7 +103,7 @@ class RNN:
         costs = []
         sequence_indexes = range(N)
         n_total = sum(len(y) for y in Y)
-        for i in xrange(epochs):
+        for i in range(epochs):
             t0 = datetime.now()
             sequence_indexes = shuffle(sequence_indexes)
             n_correct = 0
@@ -101,9 +115,16 @@ class RNN:
                 n_correct += np.sum(p == Y[j])
                 it += 1
                 if it % 200 == 0:
-                    sys.stdout.write("j/N: %d/%d correct rate so far: %f, cost so far: %f\r" % (it, N, float(n_correct)/n_total, cost))
+                    sys.stdout.write(
+                        "j/N: %d/%d correct rate so far: %f, cost so far: %f\r" %
+                        (it, N, float(n_correct)/n_total, cost)
+                    )
                     sys.stdout.flush()
-            print "i:", i, "cost:", cost, "correct rate:", (float(n_correct)/n_total), "time for epoch:", (datetime.now() - t0)
+            print(
+                "i:", i, "cost:", cost,
+                "correct rate:", (float(n_correct)/n_total),
+                "time for epoch:", (datetime.now() - t0)
+            )
             costs.append(cost)
 
         if show_fig:
@@ -127,15 +148,21 @@ class RNN:
         P = np.concatenate(P)
         return f1_score(Y, P, average=None).mean()
 
+
+def flatten(l):
+    return [item for sublist in l for item in sublist]
+
+
 def main():
     Xtrain, Ytrain, Xtest, Ytest, word2idx = get_data(split_sequences=True)
     V = len(word2idx) + 1
-    rnn = RNN(10, [10], V)
+    K = len(set(flatten(Ytrain)) | set(flatten(Ytest)))
+    rnn = RNN(10, [10], V, K)
     rnn.fit(Xtrain, Ytrain)
-    print "train score:", rnn.score(Xtrain, Ytrain)
-    print "test score:", rnn.score(Xtest, Ytest)
-    print "train f1:", rnn.f1_score(Xtrain, Ytrain)
-    print "test f1:", rnn.f1_score(Xtest, Ytest)
+    print("train score:", rnn.score(Xtrain, Ytrain))
+    print("test score:", rnn.score(Xtest, Ytest))
+    print("train f1:", rnn.f1_score(Xtrain, Ytrain))
+    print("test f1:", rnn.f1_score(Xtest, Ytest))
     
 
 if __name__ == '__main__':
